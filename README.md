@@ -1,5 +1,4 @@
-📝 README.md Corto
-markdown# Fullmetal Alchemist: Brotherhood - Sistema de Gestión Alquímica
+
 
 Aplicación web full-stack desarrollada en **Go + Next.js + TypeScript** para la gestión de Alquimistas Estatales de Amestris.
 
