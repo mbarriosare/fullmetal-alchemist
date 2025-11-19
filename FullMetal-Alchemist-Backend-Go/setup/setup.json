@@ -1,0 +1,6 @@
+{
+    "Address": ":8000",
+    "DataBase": "postgres",
+    "Duration": 5,
+    "DurationWithDescription": 10
+}

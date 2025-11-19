@@ -1,0 +1,693 @@
+openapi: 3.0.3
+info:
+  title: Fullmetal Alchemist - Sistema de Gestión Alquímica
+  description: |
+    API REST para la gestión de Alquimistas Estatales de Amestris.
+    
+    ## Autenticación
+    La mayoría de los endpoints requieren autenticación JWT.
+    Incluye el token en el header: `Authorization: Bearer {token}`
+    
+    ## Flujo de Autenticación
+    1. Hacer login en `/auth/alchemist/login` o `/auth/supervisor/login`
+    2. Guardar el token JWT retornado
+    3. Incluir el token en todas las peticiones protegidas
+    
+  version: 1.0.0
+  contact:
+    name: Consejo de Alquimia de Amestris
+    
+servers:
+  - url: http://localhost:8000
+    description: Servidor de Desarrollo
+    
+tags:
+  - name: Autenticación
+    description: Endpoints de login y registro
+  - name: Alquimistas
+    description: Gestión de alquimistas estatales
+  - name: Materiales
+    description: Gestión de materiales alquímicos
+  - name: Transmutaciones
+    description: Solicitudes y procesamiento de transmutaciones
+  - name: Misiones
+    description: Gestión de misiones
+  - name: Auditorías
+    description: Registro y consulta de auditorías
+  - name: Supervisores
+    description: Consulta de supervisores
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtenido del endpoint de login.
+        Formato: `Bearer {token}`
+        
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - Name
+        - Password
+      properties:
+        Name:
+          type: string
+          example: "Edward Elric"
+        Password:
+          type: string
+          format: password
+          example: "fullmetal123"
+          
+    SupervisorLoginRequest:
+      type: object
+      required:
+        - Supervisor_Name
+        - Supervisor_Password
+      properties:
+        Supervisor_Name:
+          type: string
+          example: "Roy Mustang"
+        Supervisor_Password:
+          type: string
+          format: password
+          example: "RoyMustangFlame345"
+          
+    LoginResponse:
+      type: object
+      properties:
+        Token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        User:
+          type: object
+          
+    AlchemistRequest:
+      type: object
+      required:
+        - Name
+        - Speciality
+        - Rank
+        - Password
+      properties:
+        Name:
+          type: string
+          example: "Edward Elric"
+        Speciality:
+          type: string
+          example: "Transmutación"
+        Rank:
+          type: string
+          example: "Mayor"
+        Password:
+          type: string
+          format: password
+          example: "fullmetal123"
+          
+    AlchemistResponse:
+      type: object
+      properties:
+        Alchemist_ID:
+          type: integer
+          example: 1
+        Alchemist_Name:
+          type: string
+          example: "Edward Elric"
+        Alchemist_Speciality:
+          type: string
+          example: "Transmutación"
+        Alchemist_Rank:
+          type: string
+          example: "Mayor"
+        Alchemist_Created_At:
+          type: string
+          format: date-time
+          
+    MaterialRequest:
+      type: object
+      required:
+        - Alchemist_ID
+        - Name
+        - Description
+        - Quantity
+        - Rarity
+      properties:
+        Alchemist_ID:
+          type: integer
+          example: 1
+        Name:
+          type: string
+          example: "Hierro Puro"
+        Description:
+          type: string
+          example: "Material base para transmutaciones"
+        Quantity:
+          type: integer
+          example: 100
+        Rarity:
+          type: string
+          enum: [Común, Raro, Épico, Legendario]
+          example: "Común"
+          
+    MaterialResponse:
+      type: object
+      properties:
+        Material_ID:
+          type: integer
+        Material_Name:
+          type: string
+        Material_Description:
+          type: string
+        Material_Quantity:
+          type: integer
+        Material_Rarity:
+          type: string
+        Material_Collected_At:
+          type: string
+          format: date-time
+        Alchemist:
+          $ref: '#/components/schemas/AlchemistResponse'
+          
+    TransmutationRequest:
+      type: object
+      required:
+        - Material_ID
+        - Description
+        - Object
+        - Dificulty
+        - Status
+        - Result
+      properties:
+        Material_ID:
+          type: integer
+          example: 1
+        Description:
+          type: string
+          example: "Transformar hierro en acero"
+        Object:
+          type: string
+          example: "Espada de Acero"
+        Dificulty:
+          type: string
+          enum: [Fácil, Media, Difícil]
+          example: "Media"
+        Status:
+          type: string
+          example: "Pendiente"
+        Result:
+          type: string
+          example: ""
+          
+    TransmutationResponse:
+      type: object
+      properties:
+        Transmutation_ID:
+          type: integer
+        Transmutation_Description:
+          type: string
+        Transmutation_Object:
+          type: string
+        Transmutation_Dificulty:
+          type: string
+        Transmutation_Status:
+          type: string
+        Transmutation_Result:
+          type: string
+        Transmutation_Requested:
+          type: string
+          format: date-time
+          
+    ProcessTransmutationRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum: [process, approve, reject]
+          example: "process"
+          description: |
+            - **process**: Procesa la transmutación en background
+            - **approve**: Aprueba la transmutación (solo supervisores)
+            - **reject**: Rechaza la transmutación (solo supervisores)
+            
+    MissionRequest:
+      type: object
+      required:
+        - Alchemist_ID
+        - Title
+        - Status
+        - Description
+      properties:
+        Alchemist_ID:
+          type: integer
+          example: 1
+        Title:
+          type: string
+          example: "Investigar Lab 5"
+        Status:
+          type: string
+          example: "Pendiente"
+        Description:
+          type: string
+          example: "Recuperar documentos sellados"
+          
+    AuditoryRequest:
+      type: object
+      required:
+        - AlchemistID
+        - AlchemicalMaterialID
+        - MissionID
+        - TransmutationID
+        - Auditory_Description
+        - Auditory_Status
+      properties:
+        AlchemistID:
+          type: integer
+          example: 1
+        AlchemicalMaterialID:
+          type: integer
+          example: 1
+        MissionID:
+          type: integer
+          example: 1
+        TransmutationID:
+          type: integer
+          example: 1
+        Auditory_Description:
+          type: string
+          example: "Revisión de uso de materiales"
+        Auditory_Status:
+          type: string
+          example: "Pendiente"
+          
+    Error:
+      type: object
+      properties:
+        Status:
+          type: integer
+        Description:
+          type: string
+        Message:
+          type: string
+
+paths:
+  /auth/alchemist/login:
+    post:
+      tags:
+        - Autenticación
+      summary: Login de Alquimista
+      description: Autentica un alquimista y retorna un JWT válido por 24 horas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciales inválidas
+          
+  /auth/supervisor/login:
+    post:
+      tags:
+        - Autenticación
+      summary: Login de Supervisor
+      description: Autentica un supervisor y retorna un JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupervisorLoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciales inválidas
+          
+  /alchemist:
+    post:
+      tags:
+        - Alquimistas
+      summary: Registrar nuevo alquimista
+      description: Endpoint público para registro de alquimistas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlchemistRequest'
+      responses:
+        '201':
+          description: Alquimista creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlchemistResponse'
+        '400':
+          description: Datos inválidos
+          
+    get:
+      tags:
+        - Alquimistas
+      summary: Listar todos los alquimistas
+      description: Obtiene la lista completa de alquimistas registrados
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de alquimistas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlchemistResponse'
+        '401':
+          description: No autorizado
+          
+  /alchemist/{id}:
+    get:
+      tags:
+        - Alquimistas
+      summary: Obtener alquimista por ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Alquimista encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlchemistResponse'
+        '404':
+          description: Alquimista no encontrado
+          
+    put:
+      tags:
+        - Alquimistas
+      summary: Actualizar alquimista
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlchemistRequest'
+      responses:
+        '202':
+          description: Alquimista actualizado
+        '404':
+          description: Alquimista no encontrado
+          
+    delete:
+      tags:
+        - Alquimistas
+      summary: Eliminar alquimista
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Alquimista eliminado
+        '404':
+          description: Alquimista no encontrado
+          
+  /alchemicalmaterial:
+    get:
+      tags:
+        - Materiales
+      summary: Listar materiales alquímicos
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de materiales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MaterialResponse'
+                  
+    post:
+      tags:
+        - Materiales
+      summary: Crear material alquímico
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialRequest'
+      responses:
+        '201':
+          description: Material creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialResponse'
+                
+  /alchemicalmaterial/{id}:
+    get:
+      tags:
+        - Materiales
+      summary: Obtener material por ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Material encontrado
+        '404':
+          description: Material no encontrado
+          
+    put:
+      tags:
+        - Materiales
+      summary: Actualizar material
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialRequest'
+      responses:
+        '202':
+          description: Material actualizado
+          
+    delete:
+      tags:
+        - Materiales
+      summary: Eliminar material
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Material eliminado
+          
+  /transmutation:
+    get:
+      tags:
+        - Transmutaciones
+      summary: Listar transmutaciones
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de transmutaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransmutationResponse'
+                  
+    post:
+      tags:
+        - Transmutaciones
+      summary: Crear transmutación
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransmutationRequest'
+      responses:
+        '201':
+          description: Transmutación creada
+          
+  /transmutation/{id}/process:
+    post:
+      tags:
+        - Transmutaciones
+      summary: Procesar transmutación (Asíncrono)
+      description: |
+        Encola una transmutación para ser procesada en segundo plano.
+        
+        **Acciones disponibles:**
+        - `process`: Procesa la transmutación (tiempo según dificultad)
+        - `approve`: Aprueba la transmutación (solo supervisores)
+        - `reject`: Rechaza la transmutación (solo supervisores)
+        
+        **Tiempos de procesamiento:**
+        - Fácil: 2 segundos
+        - Media: 5 segundos
+        - Difícil: 10 segundos
+        
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessTransmutationRequest'
+      responses:
+        '202':
+          description: Transmutación encolada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Transmutation enqueued successfully"
+                  transmutation_id:
+                    type: integer
+                    example: 1
+                  action:
+                    type: string
+                    example: "process"
+                  status:
+                    type: string
+                    example: "pending"
+        '404':
+          description: Transmutación no encontrada
+          
+  /mission:
+    get:
+      tags:
+        - Misiones
+      summary: Listar misiones
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de misiones
+          
+    post:
+      tags:
+        - Misiones
+      summary: Crear misión
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MissionRequest'
+      responses:
+        '201':
+          description: Misión creada
+          
+  /auditory:
+    get:
+      tags:
+        - Auditorías
+      summary: Listar auditorías
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de auditorías
+          
+    post:
+      tags:
+        - Auditorías
+      summary: Crear auditoría
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditoryRequest'
+      responses:
+        '201':
+          description: Auditoría creada
+          
+  /supervisor:
+    get:
+      tags:
+        - Supervisores
+      summary: Listar supervisores
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de supervisores
